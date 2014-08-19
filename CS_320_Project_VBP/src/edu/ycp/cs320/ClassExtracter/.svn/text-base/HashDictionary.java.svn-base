@@ -1,0 +1,154 @@
+package edu.ycp.cs320.ClassExtracter;
+
+
+
+
+public class HashDictionary<K, V> implements Map<K, V> {
+	// A sequence of primes with magnitudes that approximately double:
+	// use this when allocating a new storage array
+	private static final int CAPACITY[] = {
+		17, 37, 83, 163, 317, 641, 1283, 2437, 4813, 9631, 18287,
+		36343, 72221,
+	};
+
+	/**
+	 * Hash node data type.
+	 * Each hash bucket is a chain of these nodes,
+	 * arranged as a singly-linked list.
+	 */
+	private static class HashNode<K, V> {
+		public K key;
+		public V value;
+		public HashNode<K, V> next;
+
+		public HashNode(K key, V value) {
+			this.key = key;
+			this.value = value;
+		}
+		public K getKey(){
+			return key;
+		}
+		public V getValue(){
+			return value;
+		}
+	}
+
+	// TODO: add fields
+	private HashNode<K, V>[] HashTable;
+	private int numOfKeys, capacityLevel, hashConstant,loadFactor;
+	public HashDictionary() {
+		capacityLevel=0;
+		HashTable = new HashNode[CAPACITY[capacityLevel]];
+		numOfKeys=0;
+		hashConstant=CAPACITY[capacityLevel];
+		loadFactor = 0;
+	}
+	public void reHash(){
+		capacityLevel++;
+		HashNode<K, V>[] tempTable = new HashNode[CAPACITY[capacityLevel]];
+		hashConstant=CAPACITY[capacityLevel];
+		for(int i = 0; i < CAPACITY[capacityLevel-1]; i++){
+			HashNode<K, V> n = HashTable[i];
+			//rotate through current levels of the original hashTable
+			while(n!=null){
+			//while the node in that level is not equal to null
+			//create a new hash node for the temp table
+				HashNode<K, V> transferNode = new HashNode<K,V>(n.getKey(),n.getValue());
+				//put it into the correct index in temp table
+				
+				//if a first node in the index
+				if(tempTable[keyToIndex(transferNode.getKey(), hashConstant)]== null){
+				tempTable[keyToIndex(transferNode.getKey(), hashConstant)]=transferNode;
+				}//else if there is a next node
+				else{
+					HashNode<K, V> currentNode = tempTable[keyToIndex(transferNode.getKey(), hashConstant)];
+					while(true){
+						
+						if(currentNode.next==null){
+							currentNode.next = transferNode;
+							break;
+						}
+						currentNode = currentNode.next;
+					}
+				}
+				
+				n = n.next;
+			}
+		}
+		
+		HashTable = tempTable;
+	}
+	private int keyToIndex(K key, int len) {
+		int code = key.hashCode();
+		int index = code % len;
+		if (index < 0) {
+			index *= -1;
+		}
+		return index;
+	}
+
+	public V put(K key, V value) {
+		int index = keyToIndex(key, hashConstant); 
+		HashNode<K, V> n = HashTable[index];
+		while (true) {
+			if (n==null){
+				HashTable[index] = new HashNode<K, V>(key, value);
+				numOfKeys++;
+				System.out.println("num of keys: " +numOfKeys+ " loadfactor: "+(numOfKeys/hashConstant) );
+				return null;
+			}
+			else if (n.key.equals(key)) {
+				// replace existing value
+				V old = n.value;
+				n.value = value; // replace
+				return old;
+			}
+			else if(n.next==null){
+				n.next = new HashNode<K, V>(key, value);
+				numOfKeys++;
+				System.out.println("num of keys: " +numOfKeys+ " loadfactor: "+(numOfKeys/hashConstant) );
+				if (numOfKeys> 0 && (numOfKeys/hashConstant)>3){
+					reHash();
+				}
+				return null;
+			}else{
+			n = n.next;
+			}
+		}
+
+
+	}
+
+	public V get(K key) {
+		int index = keyToIndex(key, hashConstant); 
+		HashNode<K, V> n = HashTable[index];
+		while (n != null) {
+			if (n.key.equals(key)) {
+
+				return n.value;
+			}
+			n = n.next;
+		}
+
+		return null;
+
+	}
+
+	public V remove(K key) {
+		int index = keyToIndex(key, HashTable.length); 
+		HashNode<K, V> n = HashTable[index];
+
+		while (n != null) {
+			if (n.key.equals(key)) {
+				V removed = n.value;
+				n.value = null;
+				numOfKeys--;
+				return removed;
+			}
+
+			n = n.next;
+
+		}
+		return null;
+	}
+}
